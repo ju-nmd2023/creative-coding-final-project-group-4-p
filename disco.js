@@ -1,5 +1,7 @@
 function preload() {
     handpose = ml5.handPose(modelLoaded);
+    handImage = loadImage('assets/concertgoer.png'); 
+    handImageTwo = loadImage('assets/concertgoerYellow.png');
 }
 
 function setup () {
@@ -297,7 +299,7 @@ function getHandsData(results) {
     text('POPSTAR!', textX + offsetText, textY);
     counter += 0.02;
 
-    image(video, innerWidth/4 + 200, 100, 240, 480); 
+    image(video, innerWidth/4 + 200, 300, 320, 240); 
 
     for (let hand of predictions) {
         const keypoints = hand.keypoints;
@@ -318,32 +320,70 @@ function getHandsData(results) {
         
     }
 
-    push();
+    
     let value = analyser.getValue();
-    fill(24,24,24,255);
+    push();
+    fill(74,74,74,255);
     
     // Calculate bar width based on the number of bars and screen width
     // Tone.Analyser("fft", 4096) results in 2048 frequency bins.
-    const visibleBars = 200; // Change this number to make bars wider/skinnier
+    const visibleBars = 12; // Change this number to make bars wider/skinnier
     // Lower number = Wider bars
 
-// Calculate the width of each visible bar, assuming they span the whole canvas width.
-let barWidth = width / visibleBars; 
+    // Calculate the width of each visible bar, assuming they span the whole canvas width.
+    let barWidth = width / visibleBars; 
 
-// Loop through only the number of bars you want to see
-for (let i = 0; i < visibleBars; i++) {
-// Use the 'i' index to get the frequency data. 
-// Note: This only shows the low frequencies (first 200 bins).
-let v = map(value[i], -100, 0, 0, height / 2);
+    // Loop through only the number of bars you want to see
+    for (let i = 0; i < visibleBars; i++) {
+    // Use the 'i' index to get the frequency data. 
+    // Note: This only shows the low frequencies (first 200 bins).
+    let v = map(value[i], -200, 0, 0, height / 2);
 
-rect(
-i * barWidth, // X position: bar index * calculated bar width
-height - v,
-barWidth,     // Width
-v
-); 
-}
-    pop();
+    image(
+        handImage,
+        i * barWidth,   // X position: bar index * calculated bar width
+        height - v - 100,     // Y position: Anchor the base of the image at the mapped height
+        barWidth,       // Width of the hand image
+        v               // Height of the hand image (scales with frequency value)
+    ); 
+    
+        }   
+     pop();
+     push();
+      fill(54,54,54,255);
+      for (let k = 0; k < visibleBars; k++) {
+         // Use the 'i' index to get the frequency data. 
+         // Note: This only shows the low frequencies (first 200 bins).
+         let v = map(value[k], -200, 0, 0, height / 2);
+    
+         image(
+            handImageTwo,
+            k * barWidth,   // X position: bar index * calculated bar width
+            height - v,     // Y position: Anchor the base of the image at the mapped height
+            barWidth,       // Width of the hand image
+            v               // Height of the hand image (scales with frequency value)
+        );  
+        
+             }   
+          pop();
+    
+    //      push();
+    //      fill(34,34,34,255);
+    //      for (let l = 0; l < visibleBars; l++) {
+    //         // Use the 'i' index to get the frequency data. 
+    //         // Note: This only shows the low frequencies (first 200 bins).
+    //         let v = map(value[l], -90, 0, 0, height / 2);
+        
+    //         ellipse(
+    //         l * barWidth, // X position: bar index * calculated bar width
+    //         height - v,
+    //         barWidth,     // Width
+    //         v
+    //             ); 
+            
+    //             }   
+    //          pop();
+    
 
 
     if (fogMachineOn) {

@@ -2,6 +2,7 @@ function preload() {
     handpose = ml5.handPose(modelLoaded);
     handImage = loadImage('assets/concertgoer.png'); 
     handImageTwo = loadImage('assets/concertgoerYellow.png');
+    microphoneImage = loadImage('assets/microphoneCyanMag.png')
 }
 
 function setup () {
@@ -300,6 +301,8 @@ function getHandsData(results) {
     counter += 0.02;
 
     image(video, innerWidth/4 + 200, 300, 320, 240); 
+
+    image(microphoneImage, innerWidth/2 + 200, 450, 265, 235);
 
     for (let hand of predictions) {
         const keypoints = hand.keypoints;

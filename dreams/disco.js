@@ -1,13 +1,13 @@
+console.log("disco loaded!");
 function preload() {
-    handpose = ml5.handPose(modelLoaded);
-    handImage = loadImage('assets/concertgoer.png'); 
-    handImageTwo = loadImage('assets/concertgoerYellow.png');
-    microphoneImage = loadImage('assets/microphoneCyanMag.png')
-
+  handpose = ml5.handPose(modelLoaded);
+  handImage = loadImage("assets/concertgoer.png");
+  handImageTwo = loadImage("assets/concertgoerYellow.png");
+  microphoneImage = loadImage("assets/microphoneCyanMag.png");
 }
 
 function setup() {
-  createCanvas(innerWidth, innerHeight);
+  window._renderer = createCanvas(innerWidth, innerHeight);
   frameRate(30);
   field = generateField();
   generateAgents();
@@ -286,116 +286,120 @@ function draw() {
   text("I DREAMT I WAS A", textX, textY);
   pop();
 
-
-    image(microphoneImage, innerWidth/2 + 200, 450, 265, 235);
-
-    for (let hand of predictions) {
-        const keypoints = hand.keypoints;
-        const handType = hand.handedness; // "Left" or "Right"
-
-  //The following color changing code was done with the help of ChatGPT https://chatgpt.com/s/t_68dd9816de84819191fdb89c0ed53a7d
-
-
-  let colorNoise = noise(counter * 0.5);
-  let anyoneColor = map(colorNoise, 0, 1, 0, 255);
-  fill(anyoneColor);
-  text("POPSTAR!", textX + offsetText, textY);
-  counter += 0.02;
-
-  image(video, innerWidth / 4 + 200, 300, 320, 240);
+  image(microphoneImage, innerWidth / 2 + 200, 450, 265, 235);
 
   for (let hand of predictions) {
     const keypoints = hand.keypoints;
     const handType = hand.handedness; // "Left" or "Right"
 
-    // Color by hand: Blue for Left, Pink for Right
-    let handColor =
-      handType === "Left" ? color(0, 0, 255) : color(255, 105, 180);
+    //The following color changing code was done with the help of ChatGPT https://chatgpt.com/s/t_68dd9816de84819191fdb89c0ed53a7d
 
-    // Draw keypoints
-    for (let keypoint of keypoints) {
-      push();
-      noStroke();
-      fill(handColor);
-      ellipse(keypoint.x + 400, keypoint.y + 200, 10);
-      pop();
+    let colorNoise = noise(counter * 0.5);
+    let anyoneColor = map(colorNoise, 0, 1, 0, 255);
+    fill(anyoneColor);
+    text("POPSTAR!", textX + offsetText, textY);
+    counter += 0.02;
+
+    image(video, innerWidth / 4 + 200, 300, 320, 240);
+
+    for (let hand of predictions) {
+      const keypoints = hand.keypoints;
+      const handType = hand.handedness; // "Left" or "Right"
+
+      // Color by hand: Blue for Left, Pink for Right
+      let handColor =
+        handType === "Left" ? color(0, 0, 255) : color(255, 105, 180);
+
+      // Draw keypoints
+      for (let keypoint of keypoints) {
+        push();
+        noStroke();
+        fill(handColor);
+        ellipse(keypoint.x + 400, keypoint.y + 200, 10);
+        pop();
+      }
+    }
+
+    let value = analyser.getValue();
+    push();
+    fill(74, 74, 74, 255);
+
+    // Calculate bar width based on the number of bars and screen width
+    // Tone.Analyser("fft", 4096) results in 2048 frequency bins.
+    const visibleBars = 12; // Change this number to make bars wider/skinnier
+    // Lower number = Wider bars
+
+    // Calculate the width of each visible bar, assuming they span the whole canvas width.
+    let barWidth = width / visibleBars;
+
+    // Loop through only the number of bars you want to see
+    for (let i = 0; i < visibleBars; i++) {
+      // Use the 'i' index to get the frequency data.
+      // Note: This only shows the low frequencies (first 200 bins).
+      let v = map(value[i], -200, 0, 0, height / 2);
+
+      image(
+        handImage,
+        i * barWidth, // X position: bar index * calculated bar width
+        height - v - 100, // Y position: Anchor the base of the image at the mapped height
+        barWidth, // Width of the hand image
+        v // Height of the hand image (scales with frequency value)
+      );
+    }
+    pop();
+    push();
+    fill(54, 54, 54, 255);
+    for (let k = 0; k < visibleBars; k++) {
+      // Use the 'i' index to get the frequency data.
+      // Note: This only shows the low frequencies (first 200 bins).
+      let v = map(value[k], -200, 0, 0, height / 2);
+
+      image(
+        handImageTwo,
+        k * barWidth, // X position: bar index * calculated bar width
+        height - v, // Y position: Anchor the base of the image at the mapped height
+        barWidth, // Width of the hand image
+        v // Height of the hand image (scales with frequency value)
+      );
+    }
+    pop();
+
+    //      push();
+    //      fill(34,34,34,255);
+    //      for (let l = 0; l < visibleBars; l++) {
+    //         // Use the 'i' index to get the frequency data.
+    //         // Note: This only shows the low frequencies (first 200 bins).
+    //         let v = map(value[l], -90, 0, 0, height / 2);
+
+    //         ellipse(
+    //         l * barWidth, // X position: bar index * calculated bar width
+    //         height - v,
+    //         barWidth,     // Width
+    //         v
+    //             );
+
+    //             }
+    //          pop();
+
+    if (fogMachineOn) {
+      for (let agent of agents) {
+        push();
+        noStroke();
+        const x = Math.min(
+          Math.floor(agent.position.x / fieldSize),
+          maxCols - 1
+        );
+        const y = Math.min(
+          Math.floor(agent.position.y / fieldSize),
+          maxRows - 1
+        );
+        const desiredDirection = field[x][y];
+        agent.follow(desiredDirection);
+        agent.update();
+        agent.checkBorders();
+        agent.draw();
+        pop();
+      }
     }
   }
-
-  let value = analyser.getValue();
-  push();
-  fill(74, 74, 74, 255);
-
-  // Calculate bar width based on the number of bars and screen width
-  // Tone.Analyser("fft", 4096) results in 2048 frequency bins.
-  const visibleBars = 12; // Change this number to make bars wider/skinnier
-  // Lower number = Wider bars
-
-  // Calculate the width of each visible bar, assuming they span the whole canvas width.
-  let barWidth = width / visibleBars;
-
-  // Loop through only the number of bars you want to see
-  for (let i = 0; i < visibleBars; i++) {
-    // Use the 'i' index to get the frequency data.
-    // Note: This only shows the low frequencies (first 200 bins).
-    let v = map(value[i], -200, 0, 0, height / 2);
-
-    image(
-      handImage,
-      i * barWidth, // X position: bar index * calculated bar width
-      height - v - 100, // Y position: Anchor the base of the image at the mapped height
-      barWidth, // Width of the hand image
-      v // Height of the hand image (scales with frequency value)
-    );
-  }
-  pop();
-  push();
-  fill(54, 54, 54, 255);
-  for (let k = 0; k < visibleBars; k++) {
-    // Use the 'i' index to get the frequency data.
-    // Note: This only shows the low frequencies (first 200 bins).
-    let v = map(value[k], -200, 0, 0, height / 2);
-
-    image(
-      handImageTwo,
-      k * barWidth, // X position: bar index * calculated bar width
-      height - v, // Y position: Anchor the base of the image at the mapped height
-      barWidth, // Width of the hand image
-      v // Height of the hand image (scales with frequency value)
-    );
-  }
-  pop();
-
-  //      push();
-  //      fill(34,34,34,255);
-  //      for (let l = 0; l < visibleBars; l++) {
-  //         // Use the 'i' index to get the frequency data.
-  //         // Note: This only shows the low frequencies (first 200 bins).
-  //         let v = map(value[l], -90, 0, 0, height / 2);
-
-  //         ellipse(
-  //         l * barWidth, // X position: bar index * calculated bar width
-  //         height - v,
-  //         barWidth,     // Width
-  //         v
-  //             );
-
-  //             }
-  //          pop();
-
-  if (fogMachineOn) {
-    for (let agent of agents) {
-      push();
-      noStroke();
-      const x = Math.min(Math.floor(agent.position.x / fieldSize), maxCols - 1);
-      const y = Math.min(Math.floor(agent.position.y / fieldSize), maxRows - 1);
-      const desiredDirection = field[x][y];
-      agent.follow(desiredDirection);
-      agent.update();
-      agent.checkBorders();
-      agent.draw();
-      pop();
-    }
-  }
-}
 }

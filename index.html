@@ -3,14 +3,34 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Last Night I Dreamt</title>
+
+    <!-- libraries -->
     <!-- p5.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.11.9/p5.min.js"></script>
     <script src="http://unpkg.com/tone"></script>
     <!-- ml5.js (latest with handpose) -->
     <script src="https://unpkg.com/ml5@1/dist/ml5.min.js"></script>
-    <title>HandPose Live Example</title>
+
+    <link rel="stylesheet" href="assets/style.css" />
+    <script src="assets/script.js" defer></script>
   </head>
+
   <body>
-    <script src="disco.js" defer></script>
+    <div id="intro">
+      <h1>Go to sleep...</h1>
+      <button id="sleepButton">Go to sleep</button>
+    </div>
+
+    <div id="dreams" class="hidden">
+      <h2>Last night I dreamt I was a...</h2>
+      <div id="dreamButtons"></div>
+      <section id="dreamInfo">
+        <h3 id="dreamName"></h3>
+        <p id="dreamDescription"></p>
+      </section>
+      <div id="p5container"></div>
+    </div>
+    <!-- <script src="disco.js" defer></script> -->
   </body>
 </html>

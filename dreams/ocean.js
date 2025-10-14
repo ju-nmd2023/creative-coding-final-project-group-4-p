@@ -1,3 +1,5 @@
+console.log("disco loaded!");
+
 let numRows, numCols;
 const size = 6.5;
 const divider = 10;

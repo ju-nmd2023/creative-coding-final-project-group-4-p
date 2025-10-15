@@ -35,7 +35,7 @@ function setup() {
   numRows = Math.floor(height / (2 * size));
   numCols = Math.floor(width / size);
 
-  player = new Tone.Player("assets/jumbo.mp3").toDestination();
+  player = new Tone.Player("assets/seashanty.mp3").toDestination();
   analyser = new Tone.Analyser("fft", 4096);
   player.connect(analyser);
 
@@ -65,6 +65,10 @@ async function toggleAudio() {
 
 function draw() {
   // background(10, 15, 25);
+  let bass = 0,
+    mid = 0,
+    treble = 0;
+
   let frequencyValues = analyser.getValue();
   let waveAmplitude = 0;
   if (frequencyValues && frequencyValues.length > 0) {
@@ -76,10 +80,10 @@ function draw() {
   }
 
   drawWind();
-  drawWaveBase(waveAmplitude);
+  drawWaveBase(bass);
 
-  drawFirstLayer(waveAmplitude);
-  drawSecondLayer(waveAmplitude);
+  drawFirstLayer(bass);
+  drawSecondLayer(mid);
 
   t += 0.01;
   t2 += 0.03;
@@ -166,7 +170,7 @@ function drawSky() {
 
 //base so waves dont blend with background
 function drawWaveBase(amplitude) {
-  fill(25, 50, 80);
+  fill(50, 80, 100);
   noStroke();
 
   for (let y = 0; y < numRows; y++) {

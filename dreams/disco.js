@@ -288,19 +288,17 @@ function draw() {
 
   image(microphoneImage, innerWidth / 2 + 200, 450, 265, 235);
 
-  for (let hand of predictions) {
-    const keypoints = hand.keypoints;
-    const handType = hand.handedness; // "Left" or "Right"
+
 
     //The following color changing code was done with the help of ChatGPT https://chatgpt.com/s/t_68dd9816de84819191fdb89c0ed53a7d
 
-    let colorNoise = noise(counter * 0.5);
-    let anyoneColor = map(colorNoise, 0, 1, 0, 255);
-    fill(anyoneColor);
-    text("POPSTAR!", textX + offsetText, textY);
-    counter += 0.02;
+  let colorNoise = noise(counter * 0.5);
+  let anyoneColor = map(colorNoise, 0, 1, 0, 255);
+  fill(anyoneColor);
+  text("POPSTAR!", textX + offsetText, textY);
+  counter += 0.02;
 
-    image(video, innerWidth / 4 + 200, 300, 320, 240);
+  image(video, innerWidth / 4 + 200, 300, 320, 240);
 
     for (let hand of predictions) {
       const keypoints = hand.keypoints;
@@ -364,23 +362,6 @@ function draw() {
     }
     pop();
 
-    //      push();
-    //      fill(34,34,34,255);
-    //      for (let l = 0; l < visibleBars; l++) {
-    //         // Use the 'i' index to get the frequency data.
-    //         // Note: This only shows the low frequencies (first 200 bins).
-    //         let v = map(value[l], -90, 0, 0, height / 2);
-
-    //         ellipse(
-    //         l * barWidth, // X position: bar index * calculated bar width
-    //         height - v,
-    //         barWidth,     // Width
-    //         v
-    //             );
-
-    //             }
-    //          pop();
-
     if (fogMachineOn) {
       for (let agent of agents) {
         push();
@@ -402,4 +383,4 @@ function draw() {
       }
     }
   }
-}
+

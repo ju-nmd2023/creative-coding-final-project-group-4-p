@@ -15,6 +15,14 @@ let playButton;
 let boat;
 let boatX, boatY;
 
+//wind
+let Winc = 0.1;
+let WflowScale = 10;
+let Wcols, Wrows;
+let WzOffset = 0;
+let Wparticles = [];
+let WflowFieldVectors = [];
+
 function preload() {
   boat = loadImage("assets/boat.png");
 }
@@ -37,6 +45,8 @@ function setup() {
 
   boatX = width / 2;
   boatY = height / 2;
+  drawSky();
+  setupWind();
 }
 // AUDIO
 async function toggleAudio() {
@@ -54,7 +64,7 @@ async function toggleAudio() {
 }
 
 function draw() {
-  background(10, 15, 25);
+  // background(10, 15, 25);
   let frequencyValues = analyser.getValue();
   let waveAmplitude = 0;
   if (frequencyValues && frequencyValues.length > 0) {
@@ -65,7 +75,7 @@ function draw() {
     waveAmplitude = map(waveAmplitude, -120, -30, 0, 150, true);
   }
 
-  drawSky();
+  drawWind();
   drawWaveBase(waveAmplitude);
 
   drawFirstLayer(waveAmplitude);
@@ -175,5 +185,111 @@ function drawWaveBase(amplitude) {
     vertex(width, height);
     vertex(0, height);
     endShape(CLOSE);
+  }
+}
+
+// WIND
+
+function WindParticle() {
+  this.position = createVector(random(width), random(height));
+  this.previousPosition = this.position.copy();
+  this.velocity = createVector(0, 0);
+
+  this.acceleration = createVector(0, 0);
+
+  this.update = function () {
+    this.velocity.add(this.acceleration);
+    this.velocity.limit(this.maxSpeed);
+    this.position.add(this.velocity);
+    this.acceleration.mult(0);
+  };
+
+  this.applyForce = function (force) {
+    this.acceleration.add(force);
+  };
+
+  this.follow = function (vectors) {
+    let x = floor(this.position.x / WflowScale);
+    let y = floor(this.position.y / WflowScale);
+    let index = x + y * Wcols;
+    let force = vectors[index];
+    this.applyForce(force);
+  };
+
+  this.show = function () {
+    stroke(255, 20);
+    this.maxSpeed = random(3, 8);
+    strokeWeight(1);
+    line(
+      this.position.x,
+      this.position.y,
+      this.previousPosition.x,
+      this.previousPosition.y
+    );
+    //point(this.pos.x, this.pos.y);
+    this.updatePreviousPosition();
+  };
+
+  this.updatePreviousPosition = function () {
+    this.previousPosition.x = this.position.x;
+    this.previousPosition.y = this.position.y;
+  };
+  this.edges = function () {
+    if (this.position.x > width) {
+      this.position.x = 0;
+      this.updatePreviousPosition();
+    }
+
+    if (this.position.x < 0) {
+      this.position.x = width;
+      this.updatePreviousPosition();
+    }
+
+    if (this.position.y > height) {
+      this.position.y = 0;
+      this.updatePreviousPosition();
+    }
+    if (this.position.y < 0) {
+      this.position.y = height;
+      this.updatePreviousPosition();
+    }
+  };
+}
+
+function setupWind() {
+  Wcols = floor(width / WflowScale);
+  Wrows = floor(height / WflowScale);
+
+  WflowFieldVectors = new Array(Wcols * Wrows);
+
+  for (var i = 0; i < 2000; i++) {
+    Wparticles[i] = new WindParticle();
+  }
+}
+
+function drawWind() {
+  noStroke();
+  let WyOffset = 0;
+  for (let y = 0; y < Wrows; y++) {
+    let WxOffset = 0;
+    for (let x = 0; x < Wcols; x++) {
+      let index = x + y * Wcols;
+      let angle = noise(WxOffset, WyOffset, WzOffset) * TWO_PI * 1.1;
+      let v = p5.Vector.fromAngle(angle);
+
+      v.setMag(3);
+      WflowFieldVectors[index] = v;
+      WxOffset += Winc;
+      stroke(0, 50);
+    }
+    WyOffset += 0.05;
+    WzOffset += 0.0009;
+  }
+
+  for (var i = 0; i < Wparticles.length; i++) {
+    Wparticles[i].follow(WflowFieldVectors);
+    Wparticles[i].update();
+    Wparticles[i].edges();
+    Wparticles[i].show();
   }
 }

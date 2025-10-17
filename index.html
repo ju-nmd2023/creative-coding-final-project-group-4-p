@@ -13,36 +13,62 @@
     <script src="https://unpkg.com/ml5@1/dist/ml5.min.js"></script>
 
     <style>
+      @font-face {
+        font-family: "Neue";
+        src: url("assets/font.ttf") format("truetype");
+        font-weight: normal;
+        font-style: normal;
+      }
       body {
         margin: 0;
+        font-family: "Neue", sans-serif;
       }
       #dreamFrame {
         width: 100vw;
         height: 100vh;
         border: none;
+        display: none;
       }
       #buttons {
         position: absolute;
-        bottom: 20px;
+        bottom: 5%;
         left: 50%;
         transform: translateX(-50%);
+        font-size: 10px;
+      }
+      #buttons button {
+        font-family: "Neue", sans-serif;
+        font-size: 15px;
+        padding: 12px 24px;
+        margin: 0 10px;
+        border: none;
+        border-radius: 12px;
+        background-color: #e0e0e0;
+        color: #111;
+        cursor: pointer;
+      }
+      #buttons button:hover {
+        transform: scale(1.05);
       }
     </style>
   </head>
 
   <body>
     <div id="buttons">
-      <button onclick="loadDream('disco.html')">Pop Star</button>
-      <button onclick="loadDream('ocean.html')">Sailor</button>
-      <button onclick="loadDream('rene.html')">Not Sure Yet</button>
+      <button onclick="loadDream('disco.html')">A Pop Star</button>
+      <button onclick="loadDream('oceanbruh.html')">A Sailor</button>
+      <button onclick="loadDream('rene.html')">X</button>
     </div>
 
     <iframe id="dreamFrame"></iframe>
 
     <script>
       function loadDream(page) {
-        document.getElementById("dreamFrame").src = page;
+        const frame = document.getElementById("dreamFrame");
+        frame.style.display = "block";
+        frame.src = page;
       }
     </script>
+    <script src="main.js"></script>
   </body>
 </html>

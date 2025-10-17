@@ -5,7 +5,7 @@ const size = 20;
 const divider = 18;
 
 let t = 0.005;
-let t2 = 0.0015;
+//let t2 = 0.0015;
 
 let analyser;
 let player;
@@ -14,6 +14,11 @@ let playButton;
 
 let boat;
 let boatX, boatY;
+
+const numWaveRows = 10;
+const rowHeight = 30;
+let baseOceanY;
+const maxWaveOffset = 50;
 
 //wind
 let Winc = 0.1;
@@ -41,6 +46,7 @@ function setup() {
   numCols = Math.floor(width / size);
 
   player = new Tone.Player("assets/jumbo.mp3").toDestination();
+  player.loop = true;
   analyser = new Tone.Analyser("fft", 4096);
   player.connect(analyser);
 
@@ -50,6 +56,7 @@ function setup() {
 
   boatX = width / 2;
   boatY = height / 2;
+  baseOceanY = height;
   drawSky();
   setupWind();
 }
@@ -67,93 +74,81 @@ async function toggleAudio() {
     isPlaying = false;
   }
 }
-
+//reference for wave drawing technique to vertically stack waves reactive to sound
+// https://chatgpt.com/share/68f2c584-7a38-8009-a97e-4711ef4612b7
 function draw() {
-  // background(10, 15, 25);
-  let bass = 0,
-    mid = 0,
-    treble = 0;
-
   let frequencyValues = analyser.getValue();
-  let waveAmplitude = 0;
+  t += 0.005;
+  drawWaveBase();
+
+  const visibleBars = numCols;
+  let barWidth = width / visibleBars;
+
+  let targetAmplitude = new Array(visibleBars).fill(0);
+
   if (frequencyValues && frequencyValues.length > 0) {
-    for (let i = 0; i < 32; i++) {
-      waveAmplitude += frequencyValues[i];
+    for (let i = 0; i < visibleBars; i++) {
+      targetAmplitude[i] = map(
+        frequencyValues[i],
+        -120,
+        -30,
+        0,
+        maxWaveOffset,
+        true
+      );
     }
-    waveAmplitude /= 32;
-    waveAmplitude = map(waveAmplitude, -120, -30, 0, 400, true);
+
+    for (let i = 0; i < visibleBars; i++) {
+      let currentAmplitude = lerp(targetAmplitude[i], targetAmplitude[i], 0.5);
+
+      let yOffset = currentAmplitude;
+
+      for (let r = 0; r < numWaveRows; r++) {
+        let waveImage = r % 2 === 0 ? wave : wave2;
+
+        let fixedY = baseOceanY - r * rowHeight;
+        let shiftedY = fixedY - yOffset;
+        // referenced p5.js sin and cos
+        let wobbleX = sin(t * 3 + i * 0.5 + r * 0.1) * 3;
+
+        imageMode(CORNER);
+        image(
+          waveImage,
+          i * barWidth + wobbleX,
+          shiftedY,
+          barWidth + 2,
+          rowHeight
+        );
+      }
+    }
+  }
+  //BOAT LOGIC
+
+  let boatBarIndex = floor(numCols / 2);
+  let barValue = 0;
+
+  if (frequencyValues && frequencyValues.length > 0) {
+    barValue = map(
+      frequencyValues[boatBarIndex],
+      -120,
+      -30,
+      0,
+      maxWaveOffset,
+      true
+    );
   }
 
-  drawWind();
-  drawWaveBase(bass);
+  let totalHeight = numWaveRows * rowHeight;
+  let boatAnchorY = baseOceanY - totalHeight + rowHeight / 2;
 
-  drawFirstLayer(bass);
-  drawSecondLayer(mid);
+  boatY = boatAnchorY - barValue + sin(t * 10) * 10;
 
-  t += 0.03;
-  t2 += 0.005;
-
-  //boat
-  let col = Math.floor(boatX / size);
-  let topRows = 3;
-  let sumY = 0;
-
-  for (let y = 0; y < topRows; y++) {
-    let depth = map(y, 0, numRows, 1, 0);
-    let waveY = y * size + sin(t + col * 0.1) * waveAmplitude * 0.3 * depth;
-    sumY += waveY;
-  }
-
-  let avgWaveY = sumY / topRows;
-  boatY = height / 2 + avgWaveY;
   imageMode(CENTER);
   image(boat, boatX, boatY, 100, 100);
+
+  drawWind();
 }
 
-// Ocean drawing, two layers
-function drawFirstLayer(amplitude) {
-  // fill(30, 70, 160, 220);
-  for (let y = 0; y < numRows; y += 3.5) {
-    // let depth = map(y, 0, numRows, 1, 0);
-
-    for (let x = 0; x < numCols; x += 3.5) {
-      let angle = noise(x / divider, y / divider, t) * TWO_PI * 0.5;
-      let dx = cos(angle) * size * 0.5;
-      let dy = sin(angle) * size * 0.5;
-
-      let waveY = y * size + sin(t + x * 0.1) * amplitude * 1.2;
-      imageMode(CENTER);
-      image(wave, x * size + dx, waveY + dy + height / 2, size * 7, size * 7);
-      //let yOffset = y * size + sin(t + x * 0.1) * amplitude * 0.3;
-      // ellipse(x * size + dx, waveY + dy + height / 2, size * 0.8);
-    }
-  }
-}
-
-function drawSecondLayer(amplitude) {
-  noStroke();
-
-  for (let y = 0; y < numRows; y += 3.3) {
-    // let depth = map(y, 0, numRows, 1, 0);
-
-    // let brightness = map(depth, 0, 1, 50, 255);
-    // fill(0, 150 + brightness * 0.2, 255, 160 * depth + 50);
-
-    for (let x = 0; x < numCols; x += 3.3) {
-      let angle = noise(x / divider, y / divider, t2) * TWO_PI * 1.2;
-      let dx = cos(angle) * size * 0.5;
-      let dy = sin(angle) * size * 0.5;
-      let waveY = y * size + cos(t2 + x * 0.1) * amplitude * 0.8;
-
-      //let yOffset = y * size + cos(t2 + x * 0.1) * amplitude * 0.2;
-      imageMode(CENTER);
-      image(wave2, x * size + dx, waveY + dy + height / 2, size * 5, size * 5);
-      // ellipse(x * size + dx, waveY + dy + height / 2, size * 0.8);
-    }
-  }
-}
-
-//Perlin Noise Sky
 function drawSky() {
   background(175, 220, 255);
   let size = 10;
@@ -162,7 +157,6 @@ function drawSky() {
   let numCols = 200;
 
   let counter = 100;
-  //background(255, 255, 255);
   noStroke();
 
   for (let y = 0; y < numRows; y++) {
@@ -177,29 +171,19 @@ function drawSky() {
   counter += 0.1;
 }
 
-//base so waves dont blend with background
-function drawWaveBase(amplitude) {
+function drawWaveBase() {
   fill(50, 80, 100);
   noStroke();
 
-  for (let y = 0; y < numRows; y++) {
-    let depth = map(y, 0, numRows, 1, 0);
-
-    beginShape();
-    for (let x = 0; x < numCols; x++) {
-      let angle = noise(x / divider, y / divider, t) * TWO_PI * 0.5;
-      let dx = cos(angle) * size * 0.5;
-      let dy = sin(angle) * size * 0.5;
-
-      let waveY = y * size + sin(t + x * 0.1) * amplitude * 0.3 * depth;
-
-      vertex(x * size + dx, waveY + dy + height / 2);
-    }
-    vertex(width, height);
-    vertex(0, height);
-    endShape(CLOSE);
-  }
+  let totalHeight = numWaveRows * rowHeight;
+  rect(0, baseOceanY - totalHeight, width, height);
 }
+
+// Ocean drawing, two layers
+
+//Perlin Noise Sky
+
+//base so waves dont blend with background
 
 // WIND
 

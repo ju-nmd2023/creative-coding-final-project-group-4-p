@@ -30,6 +30,9 @@ function preload() {
   boat = loadImage("assets/boat.png");
   wave = loadImage("assets/wave.png");
   wave2 = loadImage("assets/wavedarker.png");
+  blueStroke = loadImage("assets/blueStroke.png");
+  darkerStroke = loadImage("assets/darkerStroke.png")
+  lighterStroke = loadImage ("assets/lighterStroke.png")
 }
 
 function setup() {
@@ -69,43 +72,99 @@ async function toggleAudio() {
 }
 
 function draw() {
-  // background(10, 15, 25);
-  let bass = 0,
-    mid = 0,
-    treble = 0;
+  // Clear the background and draw the sky first
+  drawSky(); 
+  
+  // Audio analysis
+  let value = analyser.getValue();
+  let waveAmplitude = 0; // Initialize waveAmplitude
 
-  let frequencyValues = analyser.getValue();
-  let waveAmplitude = 0;
-  if (frequencyValues && frequencyValues.length > 0) {
-    for (let i = 0; i < 32; i++) {
-      waveAmplitude += frequencyValues[i];
-    }
-    waveAmplitude /= 32;
-    waveAmplitude = map(waveAmplitude, -120, -30, 0, 400, true);
+  // The bar drawing logic from the DISCO code, adapted for OCEAN assets
+  // First layer of 'waves'
+  push();
+  
+
+  const visibleBars = 20; 
+  let barWidth = width / visibleBars; // Calculation is safe here
+  
+  
+  for (let i = 0; i < visibleBars; i++) {
+    let v = map(value[i], -200, 0, 0, height / 2);
+    
+    // Sum bar heights to calculate the average waveAmplitude for the boat
+    waveAmplitude += v; 
+
+    image(
+      blueStroke, // Replaced handImage with available 'wave' image
+      i * barWidth,
+      height - v - 100, 
+      barWidth, 
+      v
+    );
   }
+  pop();
+  
+  // Second layer of 'waves' (slightly offset)
+  push();
+  
+  for (let k = 0; k < visibleBars; k++) {
+    let waveOffset = 110;
+    let v = map(value[k], -200, 0, 0, height / 2);
+
+    image(
+      darkerStroke, // Replaced handImageTwo with available 'wave2' image
+      (k * barWidth) + waveOffset ,
+      height - v, 
+      barWidth, 
+      v 
+    );
+  }
+  pop();
+  push();
+  
+  for (let g = 0; g < visibleBars; g++) {
+    let v = map(value[g], -200, 0, 0, height / 2);
+    let waveOffset = -110;
+    image(
+      lighterStroke, // Replaced handImageTwo with available 'wave2' image
+      (g * barWidth) + waveOffset,
+      height - v + 100, 
+      barWidth, 
+      v 
+    );
+  }
+  pop();
+
+  // Calculate normalized waveAmplitude for the boat's movement
+  // if (visibleBars > 0) {
+  //     waveAmplitude /= visibleBars;
+  // }
+  // // Map to a reasonable height range (e.g., 0 to 100 pixels)
+  // waveAmplitude = map(waveAmplitude, 0, height/2, 0, 100, true); 
+
 
   drawWind();
-  drawWaveBase(bass);
-
-  drawFirstLayer(bass);
-  drawSecondLayer(mid);
+  // drawWaveBase(bass); // Still commented out
+  // drawFirstLayer(bass); // Still commented out
+  // drawSecondLayer(mid); // Still commented out
 
   t += 0.03;
   t2 += 0.005;
 
   //boat
-  let col = Math.floor(boatX / size);
-  let topRows = 3;
-  let sumY = 0;
+  // let col = Math.floor(boatX / size);
+  // let topRows = 3;
+  // let sumY = 0;
 
-  for (let y = 0; y < topRows; y++) {
-    let depth = map(y, 0, numRows, 1, 0);
-    let waveY = y * size + sin(t + col * 0.1) * waveAmplitude * 0.3 * depth;
-    sumY += waveY;
-  }
+  // for (let y = 0; y < topRows; y++) {
+  //   let depth = map(y, 0, numRows, 1, 0);
+  //   // waveAmplitude is now defined and calculated
+  //   let waveY = y * size + sin(t + col * 0.1) * waveAmplitude * 0.3 * depth; 
+  //   sumY += waveY;
+  // }
 
-  let avgWaveY = sumY / topRows;
-  boatY = height / 2 + avgWaveY;
+  // let avgWaveY = sumY / topRows;
+  // boatY = height / 2 + avgWaveY;
   imageMode(CENTER);
   image(boat, boatX, boatY, 100, 100);
 }
@@ -176,30 +235,33 @@ function drawSky() {
   }
   counter += 0.1;
 }
+const visibleBars = 12;
 
 //base so waves dont blend with background
-function drawWaveBase(amplitude) {
-  fill(50, 80, 100);
-  noStroke();
+// function drawWaveBase(amplitude) {
+//   fill(50, 80, 100);
+//   noStroke();
 
-  for (let y = 0; y < numRows; y++) {
-    let depth = map(y, 0, numRows, 1, 0);
+ 
 
-    beginShape();
-    for (let x = 0; x < numCols; x++) {
-      let angle = noise(x / divider, y / divider, t) * TWO_PI * 0.5;
-      let dx = cos(angle) * size * 0.5;
-      let dy = sin(angle) * size * 0.5;
+//   // for (let y = 0; y < numRows; y++) {
+//   //   let depth = map(y, 0, numRows, 1, 0);
 
-      let waveY = y * size + sin(t + x * 0.1) * amplitude * 0.3 * depth;
+//   //   // beginShape();
+//   //   // for (let x = 0; x < numCols; x++) {
+//   //   //   let angle = noise(x / divider, y / divider, t) * TWO_PI * 0.5;
+//   //   //   let dx = cos(angle) * size * 0.5;
+//   //   //   let dy = sin(angle) * size * 0.5;
 
-      vertex(x * size + dx, waveY + dy + height / 2);
-    }
-    vertex(width, height);
-    vertex(0, height);
-    endShape(CLOSE);
-  }
-}
+//   //   //   let waveY = y * size + sin(t + x * 0.1) * amplitude * 0.3 * depth;
+
+//   //   //   vertex(x * size + dx, waveY + dy + height / 2);
+//   //   // }
+//   //   // vertex(width, height);
+//   //   // vertex(0, height);
+//   //   // endShape(CLOSE);
+//   // }
+// }
 
 // WIND
 

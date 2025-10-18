@@ -5,7 +5,7 @@ const size = 20;
 const divider = 18;
 
 let t = 0.005;
-//let t2 = 0.0015;
+let t2 = 0.0015;
 
 let analyser;
 let player;
@@ -35,6 +35,12 @@ function preload() {
   boat = loadImage("assets/boat.png");
   wave = loadImage("assets/wave.png");
   wave2 = loadImage("assets/wavedarker.png");
+  blueStroke = loadImage("assets/blueStroke.png");
+  darkerStroke = loadImage("assets/darkerStroke.png")
+  lighterStroke = loadImage ("assets/lighterStroke.png")
+  darkestStroke = loadImage ("assets/darkestStroke.png");
+  sun = loadImage ("assets/sunStroke.png");
+
 }
 
 function setup() {
@@ -77,80 +83,96 @@ async function toggleAudio() {
 //reference for wave drawing technique to vertically stack waves reactive to sound
 // https://chatgpt.com/share/68f2c584-7a38-8009-a97e-4711ef4612b7
 function draw() {
-  let frequencyValues = analyser.getValue();
-  t += 0.005;
+  // Clear the background and draw the sky first
+  image(sun, 10, 10);
+  drawSky(); 
   drawWaveBase();
+  // Audio analysis
+  let value = analyser.getValue();
+  let waveAmplitude = 0; // Initialize waveAmplitude
 
-  const visibleBars = numCols;
-  let barWidth = width / visibleBars;
+  // First layer of 'waves'
+  push();
+  
+  const visibleBars = 12; 
+  let barWidth = width / visibleBars; 
+  
+  for (let i = 0; i < visibleBars; i++) {
+    let v = map(value[i], -200, 0, 0, height / 2);
+    
+    // Sum bar heights (optional, kept for future use)
+    waveAmplitude += v; 
 
-  let targetAmplitude = new Array(visibleBars).fill(0);
-
-  if (frequencyValues && frequencyValues.length > 0) {
-    for (let i = 0; i < visibleBars; i++) {
-      targetAmplitude[i] = map(
-        frequencyValues[i],
-        -120,
-        -30,
-        0,
-        maxWaveOffset,
-        true
-      );
-    }
-
-    for (let i = 0; i < visibleBars; i++) {
-      let currentAmplitude = lerp(targetAmplitude[i], targetAmplitude[i], 0.5);
-
-      let yOffset = currentAmplitude;
-
-      for (let r = 0; r < numWaveRows; r++) {
-        let waveImage = r % 2 === 0 ? wave : wave2;
-
-        let fixedY = baseOceanY - r * rowHeight;
-        let shiftedY = fixedY - yOffset;
-        // referenced p5.js sin and cos
-        let wobbleX = sin(t * 3 + i * 0.5 + r * 0.1) * 3;
-
-        imageMode(CORNER);
-        image(
-          waveImage,
-          i * barWidth + wobbleX,
-          shiftedY,
-          barWidth + 2,
-          rowHeight
-        );
-      }
-    }
-  }
-  //BOAT LOGIC
-
-  let boatBarIndex = floor(numCols / 2);
-  let barValue = 0;
-
-  if (frequencyValues && frequencyValues.length > 0) {
-    barValue = map(
-      frequencyValues[boatBarIndex],
-      -120,
-      -30,
-      0,
-      maxWaveOffset,
-      true
+    image(
+      blueStroke,
+      i * barWidth,
+      height - v - 100, 
+      barWidth, 
+      v
     );
   }
+  pop();
+  
+  // Second layer of 'waves' (slightly offset)
+  push();
+  
+  for (let k = 0; k < visibleBars; k++) {
+    let waveOffset = 70;
+    let v = map(value[k], -200, 0, 0, height / 2);
 
-  let totalHeight = numWaveRows * rowHeight;
-  let boatAnchorY = baseOceanY - totalHeight + rowHeight / 2;
+    image(
+      darkerStroke, 
+      (k * barWidth) + waveOffset ,
+      height - v, 
+      barWidth, 
+      v 
+    );
+  }
+  pop();
+  
+  // Third layer of 'waves' (slightly offset)
+  push();
+  
+  for (let g = 0; g < visibleBars; g++) {
+    let v = map(value[g], -200, 0, 0, height / 2);
+    let waveOffset = -70;
+    image(
+      lighterStroke,
+      (g * barWidth) + waveOffset,
+      height - v + 100, 
+      barWidth, 
+      v 
+    );
+  }
+  pop();
+  push();
+  
+  for (let b = 0; b < visibleBars; b++) {
+    let v = map(value[b], -200, 0, 0, height / 2);
+    let waveOffset = 70;
+    image(
+      darkestStroke,
+      (b * barWidth) + waveOffset,
+      height - v +200, 
+      barWidth, 
+      v 
+    );
+  }
+  pop();
 
-  boatY = boatAnchorY - barValue + sin(t * 10) * 10;
+  
+
+  drawWind();
+
+  t += 0.03;
+  t2 += 0.005;
 
   imageMode(CENTER);
   image(boat, boatX, boatY, 100, 100);
-
-  drawWind();
 }
 
 function drawSky() {
-  background(175, 220, 255);
+  //background(175, 220, 255);
   let size = 10;
   let divider = 10;
   let numRows = 200;
@@ -172,12 +194,12 @@ function drawSky() {
 }
 
 function drawWaveBase() {
-  fill(50, 80, 100);
-  noStroke();
+   fill(50, 80, 100);
+   noStroke();
 
-  let totalHeight = numWaveRows * rowHeight;
-  rect(0, baseOceanY - totalHeight, width, height);
-}
+   let totalHeight = numWaveRows * rowHeight;
+   rect(0, baseOceanY - totalHeight, width, height);
+ }
 
 // Ocean drawing, two layers
 
@@ -214,14 +236,14 @@ function WindParticle() {
   };
 
   this.show = function () {
-    stroke(255, 20);
+    stroke(255, 80);
     this.maxSpeed = random(13, 19);
-    strokeWeight(1);
+    strokeWeight(1.5);
     line(
       this.position.x,
       this.position.y,
-      this.previousPosition.x,
-      this.previousPosition.y
+      this.previousPosition.x * 2,
+      this.previousPosition.y * 2
     );
     //point(this.pos.x, this.pos.y);
     this.updatePreviousPosition();
@@ -265,7 +287,7 @@ function setupWind() {
 }
 
 function drawWind() {
-  noStroke();
+  //noStroke();
   let WyOffset = 0;
   for (let y = 0; y < Wrows; y++) {
     let WxOffset = 0;

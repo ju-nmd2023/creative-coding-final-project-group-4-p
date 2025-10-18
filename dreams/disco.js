@@ -400,7 +400,7 @@ function draw() {
   // Increment the counter for the buffer check
   frameCountForBuffer++;
 
-  image(noiseBuffer, 0, 0);
+  //image(noiseBuffer, 0, 0);
 
   drawStage();
 

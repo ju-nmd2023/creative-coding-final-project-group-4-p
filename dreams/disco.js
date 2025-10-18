@@ -22,10 +22,10 @@ function setup() {
 
   player.connect(analyser);
   playButton = createButton("Play");
-  playButton.position(innerWidth / 2, innerHeight / 2 - 300);
+  playButton.position(innerWidth / 2 - 80, innerHeight / 2 - 300);
   playButton.mousePressed(toggleAudio);
   fogButton = createButton("Fog Machine");
-  fogButton.position(innerWidth / 2, innerHeight / 2 - 100);
+  fogButton.position(innerWidth / 2 - 20, innerHeight / 2 - 300);
   fogButton.mousePressed(toggleFog);
 
   noiseBuffer = createGraphics(innerWidth, innerHeight);
@@ -404,15 +404,7 @@ function draw() {
 
   drawStage();
 
-  let textX = innerWidth / 8;
-  let textY = innerHeight / 8;
-  let offsetText = textWidth("I DREAMT I WAS A ") + 5;
-  stroke(90);
-  textSize(50);
-  push();
-  fill(255, 255, 255);
-  text("I DREAMT I WAS A", textX, textY);
-  pop();
+
 
   setSizeFromHandDistance(predictions);
   image(microphoneImage, innerWidth / 2 + 200, 450, newSizeX,newSizeY);
@@ -421,11 +413,7 @@ function draw() {
 
     //The following color changing code was done with the help of ChatGPT https://chatgpt.com/s/t_68dd9816de84819191fdb89c0ed53a7d
 
-  let colorNoise = noise(counter * 0.5);
-  let anyoneColor = map(colorNoise, 0, 1, 0, 255);
-  fill(anyoneColor);
-  text("POPSTAR!", textX + offsetText, textY);
-  counter += 0.02;
+  
 
   image(video, innerWidth / 4 + 200, 300, 320, 240);
   setVolumeFromHandDistance(predictions);

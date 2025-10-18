@@ -68,8 +68,8 @@ function setup() {
   analyser = new Tone.Analyser("fft", 4096);
   player.connect(analyser);
 
-  playButton = createButton("Play audio");
-  playButton.position(20, 20);
+  playButton = createButton("Play");
+  playButton.position(innerWidth / 2 - 30, innerHeight / 2 - 300);
   playButton.mousePressed(toggleAudio);
 
   boatX = width / 2;
@@ -88,7 +88,7 @@ function toggleAudio() {
     isPlaying = true;
   } else {
     player.stop();
-    playButton.html("Play audio");
+    playButton.html("Play");
     isPlaying = false;
   }
 }

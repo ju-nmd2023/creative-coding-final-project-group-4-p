@@ -47,7 +47,7 @@ function setup() {
   ringY = height / 1.3;
 
   playButton = createButton("Play");
-  playButton.position(innerWidth / 2, 50);
+  playButton.position(innerWidth / 2 - 30, innerHeight / 2 - 300);
   playButton.mousePressed(toggleAudio);
 
   video = createCapture(VIDEO, videoLoaded);

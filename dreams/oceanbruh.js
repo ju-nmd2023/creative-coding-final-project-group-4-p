@@ -31,8 +31,15 @@ let WflowFieldVectors = [];
 let wave;
 let wave2;
 
+//handpose
+let video;
+let handpose;
+let predictions = [];
+let newAlpha = 100;
+
 function preload() {
-  boat = loadImage("assets/boat.png");
+  handpose = ml5.handPose(modelLoaded);
+  boat = loadImage("assets/monetBoat.png");
   wave = loadImage("assets/wave.png");
   wave2 = loadImage("assets/wavedarker.png");
   blueStroke = loadImage("assets/blueStroke.png");
@@ -40,6 +47,7 @@ function preload() {
   lighterStroke = loadImage ("assets/lighterStroke.png")
   darkestStroke = loadImage ("assets/darkestStroke.png");
   sun = loadImage ("assets/sunStroke.png");
+  oceanBase = loadImage("assets/monetOcean.png");
 
 }
 
@@ -47,6 +55,10 @@ function setup() {
   window._renderer = createCanvas(innerWidth, innerHeight);
   noStroke();
   frameRate(30);
+
+  video = createCapture(VIDEO, videoLoaded);
+  video.size(640,480);
+  video.hide();
 
   numRows = Math.floor(height / (2 * size));
   numCols = Math.floor(width / size);
@@ -67,8 +79,8 @@ function setup() {
   setupWind();
 }
 // AUDIO
-async function toggleAudio() {
-  await Tone.start();
+function toggleAudio() {
+   Tone.start();
 
   if (!isPlaying) {
     player.start();
@@ -80,13 +92,119 @@ async function toggleAudio() {
     isPlaying = false;
   }
 }
+
+//handpose + troubleshooting
+function videoLoaded(){
+  console.log("Video loaded, starting handpose detection");
+  handpose.detectStart(video, getHandsData);
+}
+function modelLoaded(){
+  console.log("Handpose model loaded!");
+}
+
+function getHandsData(results){
+  predictions = results;
+}
+
+// -------- HANDPOSE VOLUME LEFT HAND CONTROL ----------- //
+
+// The following volume control function was coded with the help of Google Gemini 2.5 18/10/2025: https://gemini.google.com/share/08408638add5
+
+function setVolumeFromHandDistance(predictions) {
+
+  const leftHand = predictions.find(
+    (hand) => hand.handedness === "Left"
+  );
+
+  if (leftHand && leftHand.keypoints) {
+    const wrist = leftHand.keypoints.find(k => k.name === 'wrist');
+    const middleFingerTip = leftHand.keypoints.find(k => k.name === 'middle_finger_tip');
+
+    if (wrist && middleFingerTip) {
+      const distance = dist(
+        wrist.x,
+        wrist.y,
+        middleFingerTip.x,
+        middleFingerTip.y
+      );
+
+      const MIN_DIST = 30;  
+      const MAX_DIST = 150; 
+      const MIN_VOLUME_DB = -40; 
+      const MAX_VOLUME_DB = 0; 
+
+
+      const newVolume = map(
+        distance,
+        MIN_DIST,
+        MAX_DIST,
+        MIN_VOLUME_DB,
+        MAX_VOLUME_DB
+      );
+
+
+      const clampedVolume = constrain(
+        newVolume,
+        MIN_VOLUME_DB,
+        MAX_VOLUME_DB
+      );
+
+
+      player.volume.value = clampedVolume;
+
+    
+      
+    }
+  }
+}
+
+function setAlphaFromHandDistance(predictions) {
+
+   const rightHand = predictions.find(
+     (hand) => hand.handedness === "Right"
+   );
+
+   if (rightHand && rightHand.keypoints) {
+     const wristRight = rightHand.keypoints.find(k => k.name === 'wrist');
+     const middleFingerTipRight = rightHand.keypoints.find(k => k.name === 'middle_finger_tip');
+
+     if (wristRight && middleFingerTipRight) {
+       const distance = dist(
+         wristRight.x,
+         wristRight.y,
+         middleFingerTipRight.x,
+         middleFingerTipRight.y
+       );
+
+       const MIN_DIST = 30;  
+       const MAX_DIST = 150; 
+       const MIN_ALPHA = 20; 
+       const MAX_ALPHA = 100; 
+
+
+       newAlpha = map(
+         distance,
+         MIN_DIST,
+         MAX_DIST,
+         MIN_ALPHA,
+         MAX_ALPHA
+       );
+
+
+    
+      
+     }
+  }
+ }
+
+
+
 //reference for wave drawing technique to vertically stack waves reactive to sound
 // https://chatgpt.com/share/68f2c584-7a38-8009-a97e-4711ef4612b7
 function draw() {
   // Clear the background and draw the sky first
-  image(sun, 10, 10);
+  setAlphaFromHandDistance(predictions);
   drawSky(); 
-  drawWaveBase();
   // Audio analysis
   let value = analyser.getValue();
   let waveAmplitude = 0; // Initialize waveAmplitude
@@ -96,6 +214,29 @@ function draw() {
   
   const visibleBars = 12; 
   let barWidth = width / visibleBars; 
+
+  setVolumeFromHandDistance(predictions);
+
+  image(oceanBase,0,600, 1260, 867);
+  image(oceanBase,850,600,1260, 867);
+
+  image(video, innerWidth/2, 300, 320, 240);
+
+  for (let hand of predictions){
+    const keypoints = hand.keypoints;
+    const handType = hand.handedness;
+
+    let handColor =
+      handType === "Left" ? color(0,0,255) : color(255, 105, 180);
+    
+    for  (let keypoint of keypoints){
+      push();
+      noStroke();
+      fill(handColor);
+      ellipse(keypoint.x + 400, keypoint.y + 200, 10);
+      pop();
+    }
+  }
   
   for (let i = 0; i < visibleBars; i++) {
     let v = map(value[i], -200, 0, 0, height / 2);
@@ -166,9 +307,13 @@ function draw() {
 
   t += 0.03;
   t2 += 0.005;
+  tint(255,255,255, newAlpha);
+  image(sun, 10, 10);
+  noTint();
 
   imageMode(CENTER);
-  image(boat, boatX, boatY, 100, 100);
+  image(boat, boatX, boatY, 375, 281.5);
+  
 }
 
 function drawSky() {
@@ -193,13 +338,10 @@ function drawSky() {
   counter += 0.1;
 }
 
-function drawWaveBase() {
-   fill(50, 80, 100);
-   noStroke();
 
-   let totalHeight = numWaveRows * rowHeight;
-   rect(0, baseOceanY - totalHeight, width, height);
- }
+   
+
+  
 
 // Ocean drawing, two layers
 

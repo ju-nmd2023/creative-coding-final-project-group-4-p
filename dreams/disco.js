@@ -17,7 +17,7 @@ function setup() {
   video.size(640, 480);
   video.hide();
 
-  player = new Tone.Player("assets/jumbo.mp3").toDestination();
+  player = new Tone.Player("assets/popstar.mp3").toDestination();
   analyser = new Tone.Analyser("fft", 4096);
 
   player.connect(analyser);
@@ -104,7 +104,7 @@ function drawLayers(x, y, size, layers) {
 function drawStage() {
   push();
   translate(0, 600);
-  randomSeed(1); // makes their shape consistent across frames
+  randomSeed(1);
   for (let y = 0; y < 2; y++) {
     for (let x = 0; x < 12; x++) {
       drawLayers(
@@ -267,6 +267,60 @@ function getHandsData(results) {
   predictions = results;
 }
 
+// -------- HANDPOSE VOLUME LEFT HAND CONTROL ----------- //
+
+// The following volume control function was coded with the help of Google Gemini 2.5 18/10/2025: https://gemini.google.com/share/08408638add5
+
+function setVolumeFromHandDistance(predictions) {
+
+  const leftHand = predictions.find(
+    (hand) => hand.handedness === "Left"
+  );
+
+  if (leftHand && leftHand.keypoints) {
+    const wrist = leftHand.keypoints.find(k => k.name === 'wrist');
+    const middleFingerTip = leftHand.keypoints.find(k => k.name === 'middle_finger_tip');
+
+    if (wrist && middleFingerTip) {
+      const distance = dist(
+        wrist.x,
+        wrist.y,
+        middleFingerTip.x,
+        middleFingerTip.y
+      );
+
+      const MIN_DIST = 30;  
+      const MAX_DIST = 150; 
+      const MIN_VOLUME_DB = -40; 
+      const MAX_VOLUME_DB = 0; 
+
+
+      const newVolume = map(
+        distance,
+        MIN_DIST,
+        MAX_DIST,
+        MIN_VOLUME_DB,
+        MAX_VOLUME_DB
+      );
+
+
+      const clampedVolume = constrain(
+        newVolume,
+        MIN_VOLUME_DB,
+        MAX_VOLUME_DB
+      );
+
+
+      player.volume.value = clampedVolume;
+
+    
+      
+    }
+  }
+}
+
+
+
 function draw() {
   noStroke();
   push();
@@ -299,16 +353,17 @@ function draw() {
   counter += 0.02;
 
   image(video, innerWidth / 4 + 200, 300, 320, 240);
+  setVolumeFromHandDistance(predictions);
 
     for (let hand of predictions) {
       const keypoints = hand.keypoints;
-      const handType = hand.handedness; // "Left" or "Right"
+      const handType = hand.handedness; 
 
-      // Color by hand: Blue for Left, Pink for Right
+      
       let handColor =
         handType === "Left" ? color(0, 0, 255) : color(255, 105, 180);
 
-      // Draw keypoints
+      
       for (let keypoint of keypoints) {
         push();
         noStroke();
@@ -322,42 +377,37 @@ function draw() {
     push();
     fill(74, 74, 74, 255);
 
-    // Calculate bar width based on the number of bars and screen width
-    // Tone.Analyser("fft", 4096) results in 2048 frequency bins.
-    const visibleBars = 12; // Change this number to make bars wider/skinnier
-    // Lower number = Wider bars
+    
+    const visibleBars = 12; 
+   
 
-    // Calculate the width of each visible bar, assuming they span the whole canvas width.
+    
     let barWidth = width / visibleBars;
 
-    // Loop through only the number of bars you want to see
+    
     for (let i = 0; i < visibleBars; i++) {
-      // Use the 'i' index to get the frequency data.
-      // Note: This only shows the low frequencies (first 200 bins).
       let v = map(value[i], -200, 0, 0, height / 2);
 
       image(
         handImage,
-        i * barWidth, // X position: bar index * calculated bar width
-        height - v - 100, // Y position: Anchor the base of the image at the mapped height
-        barWidth, // Width of the hand image
-        v // Height of the hand image (scales with frequency value)
+        i * barWidth,
+        height - v - 100, 
+        barWidth, 
+        v
       );
     }
     pop();
     push();
     fill(54, 54, 54, 255);
     for (let k = 0; k < visibleBars; k++) {
-      // Use the 'i' index to get the frequency data.
-      // Note: This only shows the low frequencies (first 200 bins).
       let v = map(value[k], -200, 0, 0, height / 2);
 
       image(
         handImageTwo,
-        k * barWidth, // X position: bar index * calculated bar width
-        height - v, // Y position: Anchor the base of the image at the mapped height
-        barWidth, // Width of the hand image
-        v // Height of the hand image (scales with frequency value)
+        k * barWidth,
+        height - v, 
+        barWidth, 
+        v 
       );
     }
     pop();

@@ -82,6 +82,7 @@ async function toggleAudio() {
 }
 //reference for wave drawing technique to vertically stack waves reactive to sound
 // https://chatgpt.com/share/68f2c584-7a38-8009-a97e-4711ef4612b7
+
 function draw() {
   // Clear the background and draw the sky first
   image(sun, 10, 10);

@@ -20,11 +20,14 @@ let newSizeY = 250;
 
 const grassBars = 2048;
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 
 //handpose
 let video;
 let handpose;
 let predictions = [];
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 

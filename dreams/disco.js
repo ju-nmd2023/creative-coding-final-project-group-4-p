@@ -27,11 +27,15 @@ function setup() {
   fogButton = createButton("Fog Machine");
   fogButton.position(innerWidth / 2, innerHeight / 2 - 100);
   fogButton.mousePressed(toggleFog);
+
+  noiseBuffer = createGraphics(innerWidth, innerHeight);
 }
 
 let video;
 let handpose;
 let predictions = [];
+
+let noiseBuffer;
 
 const size = 10;
 const divider = 20;
@@ -41,6 +45,11 @@ const layers = 50;
 const sizeSquares = 120;
 let hasDrawnSquares = false;
 let counter = 0;
+newSizeX = 265;
+newSizeY = 235;
+
+let bufferRedrawInterval = 6; // Redraw buffer every 6 frames (30fps / 6 = 5 times per second)
+let frameCountForBuffer = 0;
 
 const fieldSize = 50;
 const maxCols = Math.ceil(innerWidth / fieldSize);
@@ -120,46 +129,54 @@ function drawStage() {
 
 // ------ NOISE BACKGROUND -------- //
 
-function drawNoise() {
-  push();
+function drawNoiseToBuffer() {
+  noiseBuffer.noStroke();
+  
+  // Layer 1: Base rectangles (228, 189, 161 is close to your fill(228, 189, 161) in draw())
+  noiseBuffer.push();
+  noiseBuffer.fill(228, 189, 161);
   for (let y = 0; y < numRows; y++) {
     for (let x = 0; x < numCols; x++) {
-      const value = noise(x / divider, y / divider, counter) * size;
-
-      rect(size / 2 + x * size, size / 2 + y * size, value);
+      const value = noise(x / divider, y / divider) * size;
+      noiseBuffer.rect(size / 2 + x * size, size / 2 + y * size, value);
     }
   }
-  pop();
-  push();
-  fill(222, 61, 131);
+  noiseBuffer.pop();
+
+  // Layer 2: Pink ellipses
+  noiseBuffer.push();
+  noiseBuffer.fill(222, 61, 131);
   for (let y = 0; y < numRows; y++) {
     for (let x = 0; x < numCols; x++) {
-      const value = noise(x / divider, y / divider, counter) * size;
-
-      ellipse(size / 4 + x * size, size / 4 + y * size, value * 2);
+      const value = noise(x / divider, y / divider) * size;
+      noiseBuffer.ellipse(size / 4 + x * size, size / 4 + y * size, value * 2);
     }
   }
-  pop();
-  push();
-  fill(0, 184, 184);
+  noiseBuffer.pop();
+
+  // Layer 3: Cyan rectangles
+  noiseBuffer.push();
+  noiseBuffer.fill(0, 184, 184);
   for (let y = 0; y < numRows; y++) {
     for (let x = 0; x < numCols; x++) {
-      const value = noise(x / divider, y / divider, counter) * size;
-
-      rect(size / 16 + x * size, size / 16 + y * size, value);
+      const value = noise(x / divider, y / divider) * size;
+      noiseBuffer.rect(size / 16 + x * size, size / 16 + y * size, value);
     }
   }
-  pop();
-  push();
-  fill(168, 211, 227);
+  noiseBuffer.pop();
+
+  // Layer 4: Light blue ellipses
+  noiseBuffer.push();
+  noiseBuffer.fill(168, 211, 227);
   for (let y = 0; y < numRows; y++) {
     for (let x = 0; x < numCols; x++) {
-      const value = noise(x / divider, y / divider, counter) * size + 2;
-
-      ellipse(size / 132 + x * size, size / 132 + y * size, value);
+      const value = noise(x / divider, y / divider) * size + 2;
+      noiseBuffer.ellipse(size / 132 + x * size, size / 132 + y * size, value);
     }
   }
-  pop();
+  noiseBuffer.pop();
+
+  counter += 0.02;
 }
 
 // -------- FOG MACHINE FLOW FIELD -----------//
@@ -319,14 +336,71 @@ function setVolumeFromHandDistance(predictions) {
   }
 }
 
+function setSizeFromHandDistance(predictions) {
 
+   const rightHand = predictions.find(
+     (hand) => hand.handedness === "Right"
+   );
+
+   if (rightHand && rightHand.keypoints) {
+     const wristRight = rightHand.keypoints.find(k => k.name === 'wrist');
+     const middleFingerTipRight = rightHand.keypoints.find(k => k.name === 'middle_finger_tip');
+
+     if (wristRight && middleFingerTipRight) {
+       const distance = dist(
+         wristRight.x,
+         wristRight.y,
+         middleFingerTipRight.x,
+         middleFingerTipRight.y
+       );
+
+       const MIN_DIST = 30;  
+      const MAX_DIST = 150; 
+       const MIN_SIZE = 32; 
+       const MAX_SIZE = 256; 
+
+
+       newSizeX = map(
+         distance,
+         MIN_DIST,
+         MAX_DIST,
+         MIN_SIZE,
+         MAX_SIZE
+       );
+
+       newSizeY = map(
+        distance,
+        MIN_DIST,
+        MAX_DIST,
+        MIN_SIZE,
+        MAX_SIZE
+      );
+
+    
+      
+     }
+  }
+ }
+
+
+let hasDrawnNoise = false;
 
 function draw() {
   noStroke();
   push();
   fill(228, 189, 161);
 
-  drawNoise();
+  if (frameCountForBuffer % bufferRedrawInterval === 0) {
+    drawNoiseToBuffer();
+  }
+  
+  // Display the buffer in every frame
+  image(noiseBuffer, 0, 0); 
+  
+  // Increment the counter for the buffer check
+  frameCountForBuffer++;
+
+  image(noiseBuffer, 0, 0);
 
   drawStage();
 
@@ -340,7 +414,8 @@ function draw() {
   text("I DREAMT I WAS A", textX, textY);
   pop();
 
-  image(microphoneImage, innerWidth / 2 + 200, 450, 265, 235);
+  setSizeFromHandDistance(predictions);
+  image(microphoneImage, innerWidth / 2 + 200, 450, newSizeX,newSizeY);
 
 
 

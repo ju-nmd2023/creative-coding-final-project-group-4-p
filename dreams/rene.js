@@ -18,8 +18,7 @@ let WflowFieldVectors = [];
 let newSizeX = 250;
 let newSizeY = 250;
 
-const grassBars = 4096;
-
+const grassBars = 2048;
 
 //handpose
 let video;
@@ -41,7 +40,7 @@ function setup() {
   numCols = Math.floor(width / size);
 
   player = new Tone.Player("assets/okuku.mp3").toDestination();
-  analyser = new Tone.Analyser("fft", 512);
+  analyser = new Tone.Analyser("fft", 256);
   player.connect(analyser);
   ringX = width / 2;
   ringY = height / 1.3;
@@ -51,7 +50,7 @@ function setup() {
   playButton.mousePressed(toggleAudio);
 
   video = createCapture(VIDEO, videoLoaded);
-  video.size(640,480);
+  video.size(640, 480);
   video.hide();
 
   drawSky();
@@ -59,20 +58,18 @@ function setup() {
   setupStars();
 }
 
-
 // -------- HANDPOSE VOLUME LEFT HAND CONTROL ----------- //
 
 // The following volume control function was coded with the help of Google Gemini 2.5 18/10/2025: https://gemini.google.com/share/08408638add5
 
 function setVolumeFromHandDistance(predictions) {
-
-  const leftHand = predictions.find(
-    (hand) => hand.handedness === "Left"
-  );
+  const leftHand = predictions.find((hand) => hand.handedness === "Left");
 
   if (leftHand && leftHand.keypoints) {
-    const wrist = leftHand.keypoints.find(k => k.name === 'wrist');
-    const middleFingerTip = leftHand.keypoints.find(k => k.name === 'middle_finger_tip');
+    const wrist = leftHand.keypoints.find((k) => k.name === "wrist");
+    const middleFingerTip = leftHand.keypoints.find(
+      (k) => k.name === "middle_finger_tip"
+    );
 
     if (wrist && middleFingerTip) {
       const distance = dist(
@@ -82,11 +79,10 @@ function setVolumeFromHandDistance(predictions) {
         middleFingerTip.y
       );
 
-      const MIN_DIST = 30;  
-      const MAX_DIST = 150; 
-      const MIN_VOLUME_DB = -40; 
-      const MAX_VOLUME_DB = 0; 
-
+      const MIN_DIST = 30;
+      const MAX_DIST = 150;
+      const MIN_VOLUME_DB = -40;
+      const MAX_VOLUME_DB = 0;
 
       const newVolume = map(
         distance,
@@ -96,69 +92,43 @@ function setVolumeFromHandDistance(predictions) {
         MAX_VOLUME_DB
       );
 
-
-      const clampedVolume = constrain(
-        newVolume,
-        MIN_VOLUME_DB,
-        MAX_VOLUME_DB
-      );
-
+      const clampedVolume = constrain(newVolume, MIN_VOLUME_DB, MAX_VOLUME_DB);
 
       player.volume.value = clampedVolume;
-
-    
-      
     }
   }
 }
 
 function setSizeFromHandDistance(predictions) {
+  const rightHand = predictions.find((hand) => hand.handedness === "Right");
 
-   const rightHand = predictions.find(
-     (hand) => hand.handedness === "Right"
-   );
+  if (rightHand && rightHand.keypoints) {
+    const wristRight = rightHand.keypoints.find((k) => k.name === "wrist");
+    const middleFingerTipRight = rightHand.keypoints.find(
+      (k) => k.name === "middle_finger_tip"
+    );
 
-   if (rightHand && rightHand.keypoints) {
-     const wristRight = rightHand.keypoints.find(k => k.name === 'wrist');
-     const middleFingerTipRight = rightHand.keypoints.find(k => k.name === 'middle_finger_tip');
-
-     if (wristRight && middleFingerTipRight) {
-       const distance = dist(
-         wristRight.x,
-         wristRight.y,
-         middleFingerTipRight.x,
-         middleFingerTipRight.y
-       );
-
-       const MIN_DIST = 30;  
-       const MAX_DIST = 150; 
-       const MIN_SIZE = 32; 
-       const MAX_SIZE = 256; 
-
-
-       newSizeX = map(
-         distance,
-         MIN_DIST,
-         MAX_DIST,
-         MIN_SIZE,
-         MAX_SIZE
-       );
-
-       newSizeY = map(
-        distance,
-        MIN_DIST,
-        MAX_DIST,
-        MIN_SIZE,
-        MAX_SIZE
+    if (wristRight && middleFingerTipRight) {
+      const distance = dist(
+        wristRight.x,
+        wristRight.y,
+        middleFingerTipRight.x,
+        middleFingerTipRight.y
       );
 
-    
-      
-     }
-  }
- }
+      const MIN_DIST = 30;
+      const MAX_DIST = 150;
+      const MIN_SIZE = 32;
+      const MAX_SIZE = 256;
 
- function videoLoaded() {
+      newSizeX = map(distance, MIN_DIST, MAX_DIST, MIN_SIZE, MAX_SIZE);
+
+      newSizeY = map(distance, MIN_DIST, MAX_DIST, MIN_SIZE, MAX_SIZE);
+    }
+  }
+}
+
+function videoLoaded() {
   console.log("Video loaded, starting handpose detection.");
   handpose.detectStart(video, getHandsData);
 }
@@ -170,12 +140,10 @@ function getHandsData(results) {
   predictions = results;
 }
 
-
 function draw() {
   imageMode(CENTER);
   setSizeFromHandDistance(predictions);
   setVolumeFromHandDistance(predictions);
-
 
   drawStars();
   drawMountainLayer1();
@@ -342,27 +310,25 @@ function drawMountainLayer2() {
 
 function drawGrass1() {
   let spectrum = analyser.getValue();
-  let barWidth = width / spectrum.length;
+  let barWidth = (width / spectrum.length) * 2.1;
 
   noStroke();
-  fill(92, 124, 57);
-
+  fill(92, 124, 57, 180);
   for (let i = 0; i < spectrum.length; i++) {
-    let audioLevel = map(spectrum[i], -100, 0, 10, height / 3);
-    rect(i * barWidth, 0, barWidth + 1, audioLevel);
+    let audioLevel = map(spectrum[i], -100, 0, 10, height / 2);
+    rect(i * barWidth * 0.85, 0, barWidth, audioLevel);
   }
 }
 
 function drawGrass2() {
   let spectrum = analyser.getValue();
-  let barWidth = width / spectrum.length;
+  let barWidth = (width / spectrum.length) * 2.4;
 
   noStroke();
-  fill(70, 100, 30);
-
+  fill(60, 90, 35, 150);
   for (let i = 0; i < spectrum.length; i++) {
-    let audioLevel = map(spectrum[i + 1], -100, 0, 10, height / 4);
-    rect(i * barWidth, 0, barWidth, audioLevel);
+    let audioLevel = map(spectrum[i], -100, 0, 10, height / 3);
+    rect(i * barWidth * 0.8, 0, barWidth, audioLevel);
   }
 }
 

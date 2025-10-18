@@ -15,11 +15,20 @@ let Wcols, Wrows;
 let WzOffset = 0;
 let Wparticles = [];
 let WflowFieldVectors = [];
+let newSizeX = 250;
+let newSizeY = 250;
 
 const grassBars = 4096;
 
+
+//handpose
+let video;
+let handpose;
+let predictions = [];
+
 // The following images were taken from a public domain work website https://www.cosmos.so/public-work/orb%201920s
 function preload() {
+  handpose = ml5.handPose(modelLoaded);
   ring = loadImage("assets/ring.png");
   flower1 = loadImage("assets/flower1.png");
   flower2 = loadImage("assets/flower2.png");
@@ -31,7 +40,7 @@ function setup() {
   numRows = Math.floor(height / (2 * size));
   numCols = Math.floor(width / size);
 
-  player = new Tone.Player("assets/jumbo.mp3").toDestination();
+  player = new Tone.Player("assets/okuku.mp3").toDestination();
   analyser = new Tone.Analyser("fft", 512);
   player.connect(analyser);
   ringX = width / 2;
@@ -41,13 +50,132 @@ function setup() {
   playButton.position(innerWidth / 2, 50);
   playButton.mousePressed(toggleAudio);
 
+  video = createCapture(VIDEO, videoLoaded);
+  video.size(640,480);
+  video.hide();
+
   drawSky();
   drawSkyGradient();
   setupStars();
 }
 
+
+// -------- HANDPOSE VOLUME LEFT HAND CONTROL ----------- //
+
+// The following volume control function was coded with the help of Google Gemini 2.5 18/10/2025: https://gemini.google.com/share/08408638add5
+
+function setVolumeFromHandDistance(predictions) {
+
+  const leftHand = predictions.find(
+    (hand) => hand.handedness === "Left"
+  );
+
+  if (leftHand && leftHand.keypoints) {
+    const wrist = leftHand.keypoints.find(k => k.name === 'wrist');
+    const middleFingerTip = leftHand.keypoints.find(k => k.name === 'middle_finger_tip');
+
+    if (wrist && middleFingerTip) {
+      const distance = dist(
+        wrist.x,
+        wrist.y,
+        middleFingerTip.x,
+        middleFingerTip.y
+      );
+
+      const MIN_DIST = 30;  
+      const MAX_DIST = 150; 
+      const MIN_VOLUME_DB = -40; 
+      const MAX_VOLUME_DB = 0; 
+
+
+      const newVolume = map(
+        distance,
+        MIN_DIST,
+        MAX_DIST,
+        MIN_VOLUME_DB,
+        MAX_VOLUME_DB
+      );
+
+
+      const clampedVolume = constrain(
+        newVolume,
+        MIN_VOLUME_DB,
+        MAX_VOLUME_DB
+      );
+
+
+      player.volume.value = clampedVolume;
+
+    
+      
+    }
+  }
+}
+
+function setSizeFromHandDistance(predictions) {
+
+   const rightHand = predictions.find(
+     (hand) => hand.handedness === "Right"
+   );
+
+   if (rightHand && rightHand.keypoints) {
+     const wristRight = rightHand.keypoints.find(k => k.name === 'wrist');
+     const middleFingerTipRight = rightHand.keypoints.find(k => k.name === 'middle_finger_tip');
+
+     if (wristRight && middleFingerTipRight) {
+       const distance = dist(
+         wristRight.x,
+         wristRight.y,
+         middleFingerTipRight.x,
+         middleFingerTipRight.y
+       );
+
+       const MIN_DIST = 30;  
+       const MAX_DIST = 150; 
+       const MIN_SIZE = 32; 
+       const MAX_SIZE = 256; 
+
+
+       newSizeX = map(
+         distance,
+         MIN_DIST,
+         MAX_DIST,
+         MIN_SIZE,
+         MAX_SIZE
+       );
+
+       newSizeY = map(
+        distance,
+        MIN_DIST,
+        MAX_DIST,
+        MIN_SIZE,
+        MAX_SIZE
+      );
+
+    
+      
+     }
+  }
+ }
+
+ function videoLoaded() {
+  console.log("Video loaded, starting handpose detection.");
+  handpose.detectStart(video, getHandsData);
+}
+function modelLoaded() {
+  console.log("Handpose Model Loaded!");
+}
+
+function getHandsData(results) {
+  predictions = results;
+}
+
+
 function draw() {
   imageMode(CENTER);
+  setSizeFromHandDistance(predictions);
+  setVolumeFromHandDistance(predictions);
+
 
   drawStars();
   drawMountainLayer1();
@@ -56,6 +184,7 @@ function draw() {
   drawGrass1();
   drawFlowers();
   drawRing();
+  image(video, innerWidth / 2, 400, 320, 240);
 }
 
 function drawSky() {
@@ -274,7 +403,7 @@ function drawRing() {
   push();
   translate(ringX, ringY);
   scale(1, -1);
-  image(ring, 0, 0, 250, 250);
+  image(ring, 0, 0, newSizeX, newSizeY);
   pop();
 }
 

@@ -223,21 +223,7 @@ function draw() {
 
   image(video, innerWidth/2, 300, 320, 240);
 
-  for (let hand of predictions){
-    const keypoints = hand.keypoints;
-    const handType = hand.handedness;
 
-    let handColor =
-      handType === "Left" ? color(0,0,255) : color(255, 105, 180);
-    
-    for  (let keypoint of keypoints){
-      push();
-      noStroke();
-      fill(handColor);
-      ellipse(keypoint.x + 400, keypoint.y + 200, 10);
-      pop();
-    }
-  }
   
   for (let i = 0; i < visibleBars; i++) {
     let v = map(value[i], -200, 0, 0, height / 2);

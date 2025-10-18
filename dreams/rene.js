@@ -19,17 +19,11 @@ let newSizeX = 250;
 let newSizeY = 250;
 
 const grassBars = 2048;
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
 
 //handpose
 let video;
 let handpose;
 let predictions = [];
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
 
 // The following images were taken from a public domain work website https://www.cosmos.so/public-work/orb%201920s
 function preload() {
